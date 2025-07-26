@@ -11,5 +11,6 @@ Rails.application.routes.draw do
 
   # Defines the root path route ("/")
   # root "posts#index"
-  resource :amazon_products, only: [:new, :create]
+  resources :amazon_products, only: [:index, :new, :create, :destroy]
+  get 'amazon_urls/:id/delete', to: 'amazon_products#destroy', as: :delete_amazon_url
 end

@@ -1,8 +1,12 @@
-<h1>Amazon Product Scraper</h1>
+<h1>Product Scraper</h1>
 
-<%= form_with url: amazon_products_path, method: :post, local: false do |form| %>
+<div style="margin-bottom: 20px;">
+  <%= link_to "View Saved Data", amazon_products_path, style: "padding: 8px 16px; background-color: #007bff; color: white; text-decoration: none; border-radius: 4px;" %>
+</div>
+
+<%= form_with url: amazon_products_path, method: :post, local: false, id: "scraper-form" do |form| %>
   <div>
-    <%= form.label :url, 'Amazon Product URL:' %>
+    <%= form.label :url, 'Product URL (Amazon, Flipkart, eBay, etc.):' %>
     <%= form.text_field :url, size: 80 %>
   </div>
   <div>
@@ -10,28 +14,64 @@
   </div>
 <% end %>
 
-<div id="main">
-  <turbo-frame id="scraper">
-    <% if defined?(@result) && @result.present? %>
-      <hr>
-      <div id="scrape-result" style="margin-top: 2em; padding: 1em; background: #f9f9f9; border: 1px solid #ddd; border-radius: 6px; max-width: 700px;">
-        <h2>Scraped Product Details</h2>
-        <% if @result[:error] %>
-          <p style="color: red;"><%= @result[:error] %></p>
-          <% if @result[:html_snippet] %>
-            <pre style="max-width:600px; max-height:300px; overflow:auto; background:#eee; padding:10px;"><%= @result[:html_snippet] %></pre>
-          <% end %>
-        <% else %>
-          <ul>
-            <li><strong>Name:</strong> <%= @result[:name] %></li>
-            <li><strong>MRP:</strong> <%= @result[:mrp] %></li>
-            <li><strong>Actual Price:</strong> <%= @result[:actual_price] %></li>
-            <li><strong>Discount:</strong> <%= @result[:discount] %></li>
-            <li><strong>Price (fallback):</strong> <%= @result[:price] %></li>
-            <li><strong>Tax/VAT:</strong> <%= @result[:tax] %></li>
-          </ul>
+<div id="results">
+  <% if defined?(@result) && @result.present? %>
+    <hr>
+    <div id="scrape-result" style="margin-top: 2em; padding: 1em; background: #f9f9f9; border: 1px solid #ddd; border-radius: 6px; max-width: 700px;">
+      <h2>Scraped Product Details</h2>
+      <% if @result[:error] %>
+        <p style="color: red;"><%= @result[:error] %></p>
+        <% if @result[:html_snippet] %>
+          <pre style="max-width:600px; max-height:300px; overflow:auto; background:#eee; padding:10px;"><%= @result[:html_snippet] %></pre>
         <% end %>
-      </div>
-    <% end %>
-  </turbo-frame>
-</div> 
+      <% else %>
+        <ul>
+          <li><strong>Source:</strong> <%= @result[:source] %></li>
+          <li><strong>Name:</strong> <%= @result[:name] %></li>
+          <li><strong>MRP:</strong> <%= @result[:mrp] %></li>
+          <li><strong>Price:</strong> <%= @result[:price] %></li>
+          <li><strong>Discount:</strong> <%= @result[:discount] %></li>
+          <li><strong>Tax/VAT:</strong> <%= @result[:tax] %></li>
+        </ul>
+      <% end %>
+    </div>
+  <% end %>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const form = document.getElementById('scraper-form');
+  const resultsDiv = document.getElementById('results');
+  
+  form.addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(form);
+    
+    fetch('/amazon_products', {
+      method: 'POST',
+      body: formData,
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest'
+      }
+    })
+    .then(response => response.text())
+    .then(html => {
+      // Create a temporary div to parse the HTML
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = html;
+      
+      // Find the results div in the response
+      const newResults = tempDiv.querySelector('#results');
+      
+      if (newResults) {
+        // Replace the old results with new ones
+        resultsDiv.innerHTML = newResults.innerHTML;
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+    });
+  });
+});
+</script> 
